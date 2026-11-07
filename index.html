@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A browser-based purchase propensity predictor." />
+  <title>Purchase Predictor</title>
+  <style>
+    :root { --ink:#17222d; --muted:#68737c; --line:#dfe5e8; --paper:#fffdf9; --field:#f7f8f7; --accent:#e65d3d; --deep:#12373d; --mint:#d8eee5; --warning:#fff0c8; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:#edf2ef; font:16px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .shell { width:min(1120px, calc(100% - 40px)); margin:0 auto; }
+    header { padding:28px 0; display:flex; justify-content:space-between; align-items:center; }
+    .brand { font-weight:760; letter-spacing:-.04em; font-size:1.15rem; }
+    .brand b { color:var(--accent); }
+    .tag { font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--deep); background:var(--mint); padding:7px 10px; border-radius:999px; }
+    main { background:var(--paper); border-radius:26px 26px 0 0; overflow:hidden; box-shadow:0 -1px 0 rgba(18,55,61,.08); }
+    .intro { padding:clamp(35px,6vw,72px); padding-bottom:32px; background:linear-gradient(120deg,#fffdf9 65%,#d9ece5); }
+    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:.14em; font-size:.72rem; font-weight:800; margin:0 0 12px; }
+    h1 { max-width:700px; font-size:clamp(2.4rem,5.8vw,5.5rem); letter-spacing:-.075em; line-height:.94; margin:0; font-weight:780; }
+    .intro-copy { max-width:540px; color:var(--muted); margin:25px 0 0; font-size:1.06rem; }
+    .workspace { display:grid; grid-template-columns:1.05fr .95fr; border-top:1px solid var(--line); }
+    .panel { padding:clamp(28px,4vw,54px); }
+    .form-panel { border-right:1px solid var(--line); }
+    h2 { font-size:1.45rem; letter-spacing:-.04em; margin:0 0 7px; }
+    .sub { margin:0 0 30px; color:var(--muted); font-size:.93rem; }
+    .fields { display:grid; gap:20px; }
+    label { display:block; font-size:.86rem; font-weight:700; margin-bottom:8px; }
+    .gender-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .option { position:relative; display:block; }
+    .option input { position:absolute; opacity:0; }
+    .option span { display:block; padding:13px 15px; border:1px solid var(--line); border-radius:11px; background:#fff; transition:.15s ease; cursor:pointer; }
+    .option input:checked + span { border-color:var(--deep); background:var(--deep); color:#fff; box-shadow:0 4px 13px rgba(18,55,61,.16); }
+    input[type="number"] { width:100%; padding:14px 15px; border:1px solid var(--line); background:var(--field); border-radius:11px; font:inherit; color:var(--ink); outline:none; }
+    input[type="number"]:focus { border-color:var(--deep); box-shadow:0 0 0 3px rgba(18,55,61,.12); background:white; }
+    .hint { display:block; color:var(--muted); font-size:.76rem; margin-top:6px; }
+    button { width:100%; margin-top:29px; border:0; border-radius:12px; padding:15px 18px; color:#fff; background:var(--accent); font:inherit; font-weight:760; cursor:pointer; transition:transform .15s, background .15s; }
+    button:hover { background:#cf4d31; transform:translateY(-1px); }
+    .error { min-height:1.2em; margin:14px 0 0; color:#b52f24; font-size:.85rem; font-weight:650; }
+    .result { background:var(--deep); color:#fff; display:flex; flex-direction:column; justify-content:center; }
+    .result .sub { color:#b8d1cc; }
+    .meter { margin:17px 0 24px; }
+    .score { font-size:clamp(4.3rem,8vw,7rem); line-height:.86; letter-spacing:-.08em; font-weight:790; }
+    .score span { font-size:.34em; letter-spacing:-.03em; vertical-align:top; }
+    .track { height:11px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.17); margin:21px 0 10px; }
+    .fill { width:0%; height:100%; border-radius:inherit; background:#f2c66d; transition:width .55s cubic-bezier(.2,.8,.2,1); }
+    .interpretation { font-size:1.1rem; font-weight:650; margin:0; }
+    .detail { color:#b8d1cc; margin:8px 0 0; font-size:.88rem; }
+    .model-note { margin-top:39px; padding-top:20px; border-top:1px solid rgba(255,255,255,.17); color:#b8d1cc; font-size:.78rem; }
+    .footer { padding:22px clamp(28px,4vw,54px); display:flex; align-items:center; gap:9px; color:#56636a; background:#f8faf8; border-top:1px solid var(--line); font-size:.78rem; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#4a9a77; }
+    @media (max-width:720px) { .workspace { grid-template-columns:1fr; } .form-panel { border-right:0; border-bottom:1px solid var(--line); } header { padding:20px 0; } .shell { width:min(100% - 24px,1120px); } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand">purchase<b>.</b>predictor</div><div class="tag">Model v1.0</div></header>
+    <main>
+      <section class="intro"><p class="eyebrow">Purchase propensity</p><h1>A clearer view of purchase likelihood.</h1><p class="intro-copy">Enter a customer profile to estimate the probability of purchase using the logistic-regression model trained in the accompanying notebook.</p></section>
+      <section class="workspace">
+        <form class="panel form-panel" id="predictor" novalidate>
+          <h2>Customer profile</h2><p class="sub">All fields are required. Inputs outside the training-data range are rejected to avoid unreliable predictions.</p>
+          <div class="fields">
+            <div><label>Gender</label><div class="gender-options"><label class="option"><input type="radio" name="gender" value="0" checked><span>Female</span></label><label class="option"><input type="radio" name="gender" value="1"><span>Male</span></label></div></div>
+            <div><label for="age">Age</label><input id="age" name="age" type="number" inputmode="numeric" min="18" max="60" step="1" placeholder="e.g. 32" required><small class="hint">Whole years · 18–60</small></div>
+            <div><label for="salary">Estimated salary</label><input id="salary" name="salary" type="number" inputmode="numeric" min="15000" max="150000" step="1000" placeholder="e.g. 65000" required><small class="hint">Annual amount · 15,000–150,000</small></div>
+          </div>
+          <button type="submit">Calculate likelihood</button><p class="error" id="error" role="alert"></p>
+        </form>
+        <aside class="panel result" aria-live="polite">
+          <p class="eyebrow" style="color:#f2c66d">Prediction result</p><h2>Probability of purchase</h2><p class="sub">Calculated from the trained model.</p>
+          <div class="meter"><div class="score" id="score">—<span>%</span></div><div class="track"><div class="fill" id="fill"></div></div></div>
+          <p class="interpretation" id="interpretation">Enter a profile to begin.</p><p class="detail" id="detail">The result will appear here.</p>
+          <p class="model-note">For demonstration and learning only. This model should not be used as the sole basis for customer eligibility, pricing, or other consequential decisions.</p>
+        </aside>
+      </section>
+      <footer class="footer"><i class="dot"></i> Runs entirely in your browser — no customer information is sent anywhere.</footer>
+    </main>
+  </div>
+  <script>
+    // Parameters from LogisticRegression fitted on all rows in LogisticRegression.ipynb.
+    const model = { mean:[0.49,37.655,69742.5], scale:[0.4998999899979995,10.46976480156073,34054.3124104716], coef:[0.14556208774596724,2.2912206544946603,1.14717672080242], intercept:-1.0986524313675092 };
+    const form=document.querySelector('#predictor'), error=document.querySelector('#error'), score=document.querySelector('#score'), fill=document.querySelector('#fill'), interpretation=document.querySelector('#interpretation'), detail=document.querySelector('#detail');
+    function probability(gender,age,salary) { const x=[gender,age,salary]; let z=model.intercept; for(let i=0;i<3;i++) z+=model.coef[i]*((x[i]-model.mean[i])/model.scale[i]); return 1/(1+Math.exp(-z)); }
+    form.addEventListener('submit', e => { e.preventDefault(); const gender=Number(new FormData(form).get('gender')), age=Number(form.age.value), salary=Number(form.salary.value);
+      if(!Number.isInteger(age)||age<18||age>60) return error.textContent='Enter a whole-number age from 18 to 60.';
+      if(!Number.isFinite(salary)||salary<15000||salary>150000||salary%1000!==0) return error.textContent='Enter a salary from 15,000 to 150,000 in increments of 1,000.';
+      error.textContent=''; const p=probability(gender,age,salary), percent=p*100; score.innerHTML=`${percent.toFixed(1)}<span>%</span>`; fill.style.width=`${percent}%`;
+      const tier=p>=.7?'A strong likelihood of purchase.':p>=.4?'A moderate likelihood of purchase.':'A lower likelihood of purchase.';
+      interpretation.textContent=tier; detail.textContent=`Model classification: ${p>=.5?'likely to purchase':'unlikely to purchase'} (50% decision threshold).`;
+    });
+  </script>
+</body>
+</html>
